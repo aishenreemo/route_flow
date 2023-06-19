@@ -1,0 +1,28 @@
+# Pygame
+__pycache__/
+*.pyc
+
+# Environment
+env/
+.env
+
+# Distribution / Packaging
+build/
+dist/
+*.egg-info/
+*.egg
+*.exe
+
+# Compiled bytecode
+*.pyo
+*.pyd
+
+# IDE
+.vscode/
+.idea/
+
+# Miscellaneous
+.DS_Store
+
+# gimp
+*.xcf
