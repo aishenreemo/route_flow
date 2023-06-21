@@ -1,2 +1,2 @@
-def percent_val(percentage: (int, int), size: (int, int)):
-    return ((percentage[0] / 100) * size[0], (percentage[0] / 100) * size[1])
+def percent_val(percentage, size):
+    return ((percentage[0] / 100) * size[0], (percentage[1] / 100) * size[1])

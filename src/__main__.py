@@ -1,5 +1,6 @@
 from .vehicle import Vehicle, Road
 from .config import WINDOW_SIZE, COLORSCHEME
+from time import sleep
 import pygame
 
 
@@ -13,27 +14,37 @@ def main():
     road_image = pygame.image.load("assets/roads/1.jpg")
     road_image = pygame.transform.scale(road_image, WINDOW_SIZE)
 
-    test_vehicle_1 = Vehicle(Road.A, Road.B, COLORSCHEME["red"])
-    test_vehicle_2 = Vehicle(Road.B, Road.A, COLORSCHEME["blue"])
-    test_vehicle_3 = Vehicle(Road.C, Road.D, COLORSCHEME["green"])
-    test_vehicle_4 = Vehicle(Road.D, Road.C, COLORSCHEME["yellow"])
+    vehicles = [
+        Vehicle(Road.A, Road.B, COLORSCHEME["red"]),
+        Vehicle(Road.A, Road.C, COLORSCHEME["red"]),
+        Vehicle(Road.A, Road.D, COLORSCHEME["red"]),
+        Vehicle(Road.B, Road.A, COLORSCHEME["yellow"]),
+        Vehicle(Road.B, Road.C, COLORSCHEME["yellow"]),
+        Vehicle(Road.B, Road.D, COLORSCHEME["yellow"]),
+        Vehicle(Road.C, Road.A, COLORSCHEME["blue"]),
+        Vehicle(Road.C, Road.B, COLORSCHEME["blue"]),
+        Vehicle(Road.C, Road.D, COLORSCHEME["blue"]),
+        Vehicle(Road.D, Road.A, COLORSCHEME["green"]),
+        Vehicle(Road.D, Road.B, COLORSCHEME["green"]),
+        Vehicle(Road.D, Road.C, COLORSCHEME["green"]),
+    ]
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        test_vehicle_1.update()
-        test_vehicle_2.update()
-        test_vehicle_3.update()
-        test_vehicle_4.update()
+        for vehicle in vehicles:
+            vehicle.update()
 
         window.blit(road_image, (0, 0))
-        test_vehicle_1.render(window)
-        test_vehicle_2.render(window)
-        test_vehicle_3.render(window)
-        test_vehicle_4.render(window)
+
+        for vehicle in vehicles:
+            vehicle.render(window)
+
         pygame.display.flip()
+
+        sleep(30 / 1000)
 
 
 if __name__ == "__main__":

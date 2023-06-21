@@ -3,8 +3,10 @@ from .utils import percent_val
 
 from pygame.surface import Surface
 from pygame.sprite import Sprite
+from pygame.math import Vector2
 from pygame.rect import Rect
 import pygame
+import math
 
 from enum import Enum
 
@@ -16,6 +18,80 @@ class Road(Enum):
     D = 3
 
 
+class VehicleLocation(Enum):
+    ON_SOURCE = 0
+    ON_TURNING = 1
+    ON_DESTINATION = 2
+
+
+class VehicleDirection(Enum):
+    RIGHT = -1
+    STRAIGHT = 0
+    LEFT = 1
+
+
+# initial positions
+source_position_map = {
+    Road.A: ((45 / 100) * WINDOW_SIZE[0], -100),
+    Road.B: (WINDOW_SIZE[0] + 100, (45 / 100) * WINDOW_SIZE[1]),
+    Road.C: ((55 / 100) * WINDOW_SIZE[0], WINDOW_SIZE[1] + 100),
+    Road.D: (-100, (55 / 100) * WINDOW_SIZE[1]),
+}
+
+turning_point_map = {
+    Road.A: ((45 / 100) * WINDOW_SIZE[0], (40 / 100) * WINDOW_SIZE[1]),
+    Road.B: ((60 / 100) * WINDOW_SIZE[0], (45 / 100) * WINDOW_SIZE[1]),
+    Road.C: ((55 / 100) * WINDOW_SIZE[0], (60 / 100) * WINDOW_SIZE[1]),
+    Road.D: ((40 / 100) * WINDOW_SIZE[0], (55 / 100) * WINDOW_SIZE[1]),
+}
+
+center_point_map = {
+    Road.A: ((40 / 100) * WINDOW_SIZE[0], (40 / 100) * WINDOW_SIZE[1]),
+    Road.B: ((60 / 100) * WINDOW_SIZE[0], (40 / 100) * WINDOW_SIZE[1]),
+    Road.C: ((60 / 100) * WINDOW_SIZE[0], (60 / 100) * WINDOW_SIZE[1]),
+    Road.D: ((40 / 100) * WINDOW_SIZE[0], (60 / 100) * WINDOW_SIZE[1]),
+}
+
+destination_map = {
+    Road.A: ((55 / 100) * WINDOW_SIZE[0], (40 / 100) * WINDOW_SIZE[1]),
+    Road.B: ((60 / 100) * WINDOW_SIZE[0], (55 / 100) * WINDOW_SIZE[1]),
+    Road.C: ((45 / 100) * WINDOW_SIZE[0], (60 / 100) * WINDOW_SIZE[1]),
+    Road.D: ((40 / 100) * WINDOW_SIZE[0], (45 / 100) * WINDOW_SIZE[1]),
+}
+
+# initial velocity
+velocity_map = {
+    Road.A: (0, 4),
+    Road.B: (-4, 0),
+    Road.C: (0, -4),
+    Road.D: (4, 0),
+}
+
+# initial directions
+degree_map = {
+    Road.A: 270,
+    Road.B: 180,
+    Road.C: 90,
+    Road.D: 0,
+}
+
+reverse_map = {
+    Road.A: Road.C,
+    Road.B: Road.D,
+    Road.C: Road.A,
+    Road.D: Road.B,
+}
+
+direction_map = {
+    -1: VehicleDirection.RIGHT,
+    -2: VehicleDirection.STRAIGHT,
+    -3: VehicleDirection.LEFT,
+    1: VehicleDirection.LEFT,
+    2: VehicleDirection.STRAIGHT,
+    3: VehicleDirection.RIGHT,
+}
+
+
 class Vehicle(Sprite):
     def __init__(self, src: Road, dest: Road, color=COLORSCHEME["red"]):
         super().__init__()
@@ -24,58 +100,69 @@ class Vehicle(Sprite):
         self.dest = dest
         self.color = color
 
-        if self.src == Road.A:
-            self.x = (45 / 100) * WINDOW_SIZE[0]
-            self.y = (0 / 100) * WINDOW_SIZE[1] - 100
-            self.velocity = (0.0, 0.4)
-            self.degree = 90
-        elif self.src == Road.B:
-            self.x = (100 / 100) * WINDOW_SIZE[0] + 100
-            self.y = (45 / 100) * WINDOW_SIZE[1]
-            self.velocity = (-0.4, 0.0)
-            self.degree = 180
-        elif self.src == Road.C:
-            self.x = (55 / 100) * WINDOW_SIZE[0]
-            self.y = (100 / 100) * WINDOW_SIZE[1] + 100
-            self.velocity = (0.0, -0.4)
-            self.degree = 270
-        elif self.src == Road.D:
-            self.x = (0 / 100) * WINDOW_SIZE[0] - 100
-            self.y = (55 / 100) * WINDOW_SIZE[1]
-            self.velocity = (0.4, 0.0)
-            self.degree = 0
+        self.position = Vector2(*source_position_map[src])
+        self.velocity = Vector2(*velocity_map[src])
+        self.degree = degree_map[src]
 
-        self.image = Surface(CAR_SIZE, pygame.SRCALPHA)
+        self.location = VehicleLocation.ON_SOURCE
+        self.direction = direction_map[self.src.value - self.dest.value]
+
+        self.turning_point = Vector2(*turning_point_map[self.src])
+        self.destination = Vector2(*destination_map[self.dest])
+        self.center_point = Vector2(*center_point_map[self.src])
+
+        if self.direction == VehicleDirection.RIGHT:
+            next_enum = Road((self.src.value + 1) % 4)
+            self.center_point = Vector2(*center_point_map[next_enum])
+
         self.turning = True
 
         self.draw()
 
     def draw(self):
-        position = percent_val((10, 10), CAR_SIZE)
-        size = percent_val((80, 80), CAR_SIZE)
+        self.image = Surface(CAR_SIZE, pygame.SRCALPHA)
+        positions = [percent_val((10, 10), CAR_SIZE), percent_val((80, 10), CAR_SIZE)]
+        sizes = [percent_val((80, 80), CAR_SIZE), percent_val((10, 80), CAR_SIZE)]
+        colors = [self.color, COLORSCHEME["white"]]
 
         self.image.fill((0, 0, 0, 0))
-        pygame.draw.rect(
-            self.image,
-            self.color,
-            Rect(position, size),
-            0
-        )
-        # pygame.draw.rect(
-        #     self.image,
-        #     COLORSCHEME["black"],
-        #     Rect((0, 0), CAR_SIZE),
-        #     1
-        # )
+
+        for i in range(0, 2):
+            rect = Rect(positions[i], sizes[i])
+            pygame.draw.rect(self.image, colors[i], rect)
+
+        self.image = pygame.transform.rotate(self.image, self.degree)
 
     def update(self):
-        self.x += self.velocity[0]
-        self.y += self.velocity[1]
+        if self.location == VehicleLocation.ON_SOURCE:
+            distance = self.position.distance_to(self.turning_point)
+            if distance <= 4:
+                self.location = VehicleLocation.ON_TURNING
+
+        elif self.location == VehicleLocation.ON_TURNING:
+            if self.direction != VehicleDirection.STRAIGHT:
+                direction = self.center_point - self.turning_point
+                radius = direction.length()
+                angular_velocity = self.velocity.length() / radius
+                angle_change = math.degrees(angular_velocity) * self.direction.value
+                self.degree = (self.degree - angle_change) % 360
+                self.velocity = self.velocity.rotate(angle_change) * radius
+                self.draw()
+
+            distance = self.position.distance_to(self.destination)
+            if distance <= 4:
+                reverse_road = reverse_map[self.dest]
+                self.location = VehicleLocation.ON_DESTINATION
+                self.velocity = Vector2(*velocity_map[reverse_road])
+                self.degree = round(self.degree / 90) * 90
+                self.draw()
+
+        max_speed = 4
+        if self.velocity.length() > max_speed:
+            self.velocity.scale_to_length(max_speed)
+
+        self.position += self.velocity
 
     def render(self, screen):
-        if self.turning:
-            self.image = pygame.transform.rotate(self.image, self.degree)
-            self.turning = False
-
-        rect = self.image.get_rect(center=(self.x, self.y))
+        rect = self.image.get_rect(center=tuple(self.position))
         screen.blit(self.image, rect)
