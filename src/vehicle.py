@@ -1,5 +1,7 @@
 from .config import CAR_SIZE, COLORSCHEME, WINDOW_SIZE
+from .light import TrafficLightVariant
 from .utils import percent_val
+from .road import Road
 
 from pygame.surface import Surface
 from pygame.sprite import Sprite
@@ -9,13 +11,6 @@ import pygame
 import math
 
 from enum import Enum
-
-
-class Road(Enum):
-    A = 0
-    B = 1
-    C = 2
-    D = 3
 
 
 class VehicleLocation(Enum):
@@ -29,6 +24,13 @@ class VehicleDirection(Enum):
     STRAIGHT = 0
     LEFT = 1
 
+
+control_zone = Rect(
+    (int((40 / 100) * WINDOW_SIZE[0]), int((40 / 100) * WINDOW_SIZE[1])),
+    (int((20 / 100) * WINDOW_SIZE[0]), int((20 / 100) * WINDOW_SIZE[1])),
+)
+
+danger_zone = control_zone.inflate(-20, -20)
 
 # initial positions
 source_position_map = {
@@ -133,7 +135,7 @@ class Vehicle(Sprite):
 
         self.image = pygame.transform.rotate(self.image, self.degree)
 
-    def update(self, vehicles):
+    def update(self, vehicles, traffic_lights):
         if self.location == VehicleLocation.ON_SOURCE:
             distance = self.position.distance_to(self.turning_point)
             if distance <= 4:
@@ -160,7 +162,7 @@ class Vehicle(Sprite):
         min_speed = 0.01
         max_speed = 3
 
-        if not self.is_safe_to_move(vehicles):
+        if not self.is_safe_to_move(vehicles, traffic_lights):
             if self.velocity.length() > min_speed:
                 self.velocity *= 0.3
         else:
@@ -170,14 +172,24 @@ class Vehicle(Sprite):
         if self.velocity.length() > max_speed:
             self.velocity.scale_to_length(max_speed)
 
-        self.position += self.velocity
+        if self.velocity.length() > 0.02:
+            self.position += self.velocity
 
     def render(self, screen):
         rect = self.image.get_rect(center=tuple(self.position))
         screen.blit(self.image, rect)
 
-    def is_safe_to_move(self, vehicles):
-        for vehicle in vehicles:
+    def is_safe_to_move(self, vehicles, traffic_lights):
+        is_stop = traffic_lights[self.src].variant == TrafficLightVariant.STOP
+        is_onsrc = self.location == VehicleLocation.ON_SOURCE
+        is_close = self.image.get_rect(center=tuple(self.position)).colliderect(control_zone)
+        is_danger = self.image.get_rect(center=tuple(self.position)).colliderect(danger_zone)
+
+        if is_stop and is_onsrc and is_close and not is_danger:
+            self.stopped = True
+            return False
+
+        for vehicle in vehicles[::-1]:
             if vehicle is self:
                 continue
 

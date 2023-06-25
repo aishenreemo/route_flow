@@ -1,6 +1,6 @@
 from .vehicle import Vehicle, Road, VehicleLocation
 from .config import WINDOW_SIZE, COLORSCHEME
-from time import sleep
+from .light import TrafficLight, TrafficLightVariant
 import pygame
 import random
 
@@ -22,7 +22,11 @@ def main():
     spawn_timer = 0
     spawn_interval = 0
 
-    max_vehicles = 10
+    max_vehicles = 12
+
+    traffic_lights = {}
+    for road in Road:
+        traffic_lights[road] = TrafficLight(road)
 
     while running:
         for event in pygame.event.get():
@@ -39,7 +43,7 @@ def main():
             if not vehicle_is_inside and vehicle_passed:
                 vehicles_to_remove.append(vehicle)
             else:
-                vehicle.update(vehicles)
+                vehicle.update(vehicles, traffic_lights)
 
         for vehicle in vehicles_to_remove:
             vehicles.remove(vehicle)
@@ -49,10 +53,13 @@ def main():
         for vehicle in vehicles:
             vehicle.render(window)
 
+        for traffic_light in traffic_lights.values():
+            traffic_light.render(window)
+
         spawn_timer += clock.get_time()
         if spawn_timer >= spawn_interval and len(vehicles) < max_vehicles:
             new_vehicle = spawn_vehicle()
-            if (new_vehicle.is_safe_to_move(vehicles)):
+            if (new_vehicle.is_safe_to_move(vehicles, traffic_lights)):
                 vehicles.append(new_vehicle)
 
             spawn_timer = 0

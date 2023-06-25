@@ -1,5 +1,6 @@
 WINDOW_SIZE = (600, 600)
 CAR_SIZE = (100, 50)
+TRAFFIC_LIGHT_SIZE = (42, 72)
 
 COLORSCHEME = {
     "black": "#0B0F10",
