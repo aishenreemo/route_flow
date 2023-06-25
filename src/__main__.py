@@ -85,11 +85,12 @@ def spawn_vehicle():
     src = random.choice(roads)
     dest = random.choice(roads)
     color = random.choice(colors)
+    acceleration = random.uniform(1.1, 1.4)
 
     while src == dest:
         dest = random.choice(roads)
 
-    return Vehicle(src, dest, color)
+    return Vehicle(src, dest, color, acceleration)
 
 
 if __name__ == "__main__":

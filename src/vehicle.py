@@ -95,12 +95,13 @@ direction_map = {
 
 
 class Vehicle(Sprite):
-    def __init__(self, src: Road, dest: Road, color=COLORSCHEME["red"]):
+    def __init__(self, src: Road, dest: Road, color=COLORSCHEME["red"], acceleration=1.2):
         super().__init__()
 
         self.src = src
         self.dest = dest
         self.color = color
+        self.acceleration = acceleration
 
         self.position = Vector2(*source_position_map[src])
         self.velocity = Vector2(*velocity_map[src])
@@ -167,7 +168,7 @@ class Vehicle(Sprite):
                 self.velocity *= 0.3
         else:
             if self.velocity.length() < max_speed:
-                self.velocity *= 1.2
+                self.velocity *= self.acceleration
 
         if self.velocity.length() > max_speed:
             self.velocity.scale_to_length(max_speed)
