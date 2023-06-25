@@ -134,6 +134,12 @@ class Vehicle(Sprite):
             rect = Rect(positions[i], sizes[i])
             pygame.draw.rect(self.image, colors[i], rect)
 
+        if self.direction != VehicleDirection.STRAIGHT:
+            position = percent_val((74, 20 if self.direction == VehicleDirection.LEFT else 63), CAR_SIZE)
+            size = percent_val((7, 10), CAR_SIZE)
+            rect = Rect(position, size)
+            pygame.draw.rect(self.image, COLORSCHEME["yellow"], rect)
+
         self.image = pygame.transform.rotate(self.image, self.degree)
 
     def update(self, grid, traffic_lights):
