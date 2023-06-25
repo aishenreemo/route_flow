@@ -1,6 +1,6 @@
 from .vehicle import Vehicle, Road, VehicleLocation
-from .config import WINDOW_SIZE, COLORSCHEME
-from .light import TrafficLight, TrafficLightVariant
+from .config import WINDOW_SIZE, COLORSCHEME, CELL_SIZE
+from .light import TrafficLight 
 import pygame
 import random
 
@@ -18,6 +18,7 @@ def main():
     clock = pygame.time.Clock()
 
     vehicles = []
+    grid = {}
 
     spawn_timer = 0
     spawn_interval = 0
@@ -38,6 +39,8 @@ def main():
                     if traffic_light.image.get_rect(center=tuple(traffic_light.position)).collidepoint(mouse_pos):
                         traffic_light.toggle()
 
+        update_grid(grid, vehicles)
+
         vehicles_to_remove = []
 
         for vehicle in vehicles:
@@ -48,7 +51,7 @@ def main():
             if not vehicle_is_inside and vehicle_passed:
                 vehicles_to_remove.append(vehicle)
             else:
-                vehicle.update(vehicles, traffic_lights)
+                vehicle.update(grid, traffic_lights)
 
         for vehicle in vehicles_to_remove:
             vehicles.remove(vehicle)
@@ -65,7 +68,7 @@ def main():
         spawn_timer += clock.get_time()
         if spawn_timer >= spawn_interval and len(vehicles) < max_vehicles:
             new_vehicle = spawn_vehicle()
-            if (new_vehicle.is_safe_to_move(vehicles, traffic_lights)):
+            if (new_vehicle.is_safe_to_move(grid, traffic_lights)):
                 vehicles.append(new_vehicle)
 
             spawn_timer = 0
@@ -91,6 +94,20 @@ def spawn_vehicle():
         dest = random.choice(roads)
 
     return Vehicle(src, dest, color, acceleration)
+
+
+def update_grid(grid, vehicles):
+    grid.clear()
+
+    for vehicle in vehicles:
+        cell_x = int(vehicle.position.x / CELL_SIZE[0])
+        cell_y = int(vehicle.position.y / CELL_SIZE[1])
+        cell_key = (cell_x, cell_y)
+
+        if cell_key in grid:
+            grid[cell_key].append(vehicle)
+        else:
+            grid[cell_key] = [vehicle]
 
 
 if __name__ == "__main__":

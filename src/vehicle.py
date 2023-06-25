@@ -1,4 +1,4 @@
-from .config import CAR_SIZE, COLORSCHEME, WINDOW_SIZE
+from .config import CAR_SIZE, COLORSCHEME, WINDOW_SIZE, CELL_SIZE
 from .light import TrafficLightVariant
 from .utils import percent_val
 from .road import Road
@@ -136,7 +136,7 @@ class Vehicle(Sprite):
 
         self.image = pygame.transform.rotate(self.image, self.degree)
 
-    def update(self, vehicles, traffic_lights):
+    def update(self, grid, traffic_lights):
         if self.location == VehicleLocation.ON_SOURCE:
             distance = self.position.distance_to(self.turning_point)
             if distance <= 4:
@@ -163,7 +163,7 @@ class Vehicle(Sprite):
         min_speed = 0.01
         max_speed = 4
 
-        if not self.is_safe_to_move(vehicles, traffic_lights):
+        if not self.is_safe_to_move(grid, traffic_lights):
             if self.velocity.length() > min_speed:
                 self.velocity *= 0.3
         else:
@@ -180,7 +180,7 @@ class Vehicle(Sprite):
         rect = self.image.get_rect(center=tuple(self.position))
         screen.blit(self.image, rect)
 
-    def is_safe_to_move(self, vehicles, traffic_lights):
+    def is_safe_to_move(self, grid, traffic_lights):
         is_stop = traffic_lights[self.src].variant != TrafficLightVariant.GO
         is_onsrc = self.location == VehicleLocation.ON_SOURCE
         is_close = self.image.get_rect(center=tuple(self.position)).colliderect(control_zone)
@@ -190,7 +190,20 @@ class Vehicle(Sprite):
             self.stopped = True
             return False
 
-        for vehicle in vehicles[::-1]:
+        vehicles = []
+        cell_x = int(self.position.x / CELL_SIZE[0])
+        cell_y = int(self.position.y / CELL_SIZE[1])
+        neighboring_cells = [
+            (cell_x - 1, cell_y - 1), (cell_x, cell_y - 1), (cell_x + 1, cell_y - 1),
+            (cell_x - 1, cell_y), (cell_x, cell_y), (cell_x + 1, cell_y),
+            (cell_x - 1, cell_y + 1), (cell_x, cell_y + 1), (cell_x + 1, cell_y + 1)
+        ]
+
+        for cell_key in neighboring_cells:
+            if cell_key in grid:
+                vehicles.extend(grid[cell_key])
+
+        for vehicle in vehicles:
             if vehicle is self:
                 continue
 
