@@ -22,7 +22,7 @@ def main():
     spawn_timer = 0
     spawn_interval = 0
 
-    max_vehicles = 12
+    max_vehicles = 24
 
     traffic_lights = {}
     for road in Road:
@@ -32,6 +32,11 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                for traffic_light in traffic_lights.values():
+                    if traffic_light.image.get_rect(center=tuple(traffic_light.position)).collidepoint(mouse_pos):
+                        traffic_light.toggle()
 
         vehicles_to_remove = []
 
@@ -54,6 +59,7 @@ def main():
             vehicle.render(window)
 
         for traffic_light in traffic_lights.values():
+            traffic_light.update(clock)
             traffic_light.render(window)
 
         spawn_timer += clock.get_time()

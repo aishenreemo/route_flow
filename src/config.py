@@ -2,6 +2,8 @@ WINDOW_SIZE = (600, 600)
 CAR_SIZE = (100, 50)
 TRAFFIC_LIGHT_SIZE = (42, 72)
 
+YELLOW_SIGNAL_DURATION = 1000
+
 COLORSCHEME = {
     "black": "#0B0F10",
     "red": "#df5b61",

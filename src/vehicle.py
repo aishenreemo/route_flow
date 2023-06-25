@@ -34,10 +34,10 @@ danger_zone = control_zone.inflate(-20, -20)
 
 # initial positions
 source_position_map = {
-    Road.A: ((45 / 100) * WINDOW_SIZE[0], -100),
-    Road.B: (WINDOW_SIZE[0] + 100, (45 / 100) * WINDOW_SIZE[1]),
-    Road.C: ((55 / 100) * WINDOW_SIZE[0], WINDOW_SIZE[1] + 100),
-    Road.D: (-100, (55 / 100) * WINDOW_SIZE[1]),
+    Road.A: ((45 / 100) * WINDOW_SIZE[0], -500),
+    Road.B: (WINDOW_SIZE[0] + 500, (45 / 100) * WINDOW_SIZE[1]),
+    Road.C: ((55 / 100) * WINDOW_SIZE[0], WINDOW_SIZE[1] + 500),
+    Road.D: (-500, (55 / 100) * WINDOW_SIZE[1]),
 }
 
 turning_point_map = {
@@ -160,7 +160,7 @@ class Vehicle(Sprite):
                 self.draw()
 
         min_speed = 0.01
-        max_speed = 3
+        max_speed = 4
 
         if not self.is_safe_to_move(vehicles, traffic_lights):
             if self.velocity.length() > min_speed:
@@ -180,7 +180,7 @@ class Vehicle(Sprite):
         screen.blit(self.image, rect)
 
     def is_safe_to_move(self, vehicles, traffic_lights):
-        is_stop = traffic_lights[self.src].variant == TrafficLightVariant.STOP
+        is_stop = traffic_lights[self.src].variant != TrafficLightVariant.GO
         is_onsrc = self.location == VehicleLocation.ON_SOURCE
         is_close = self.image.get_rect(center=tuple(self.position)).colliderect(control_zone)
         is_danger = self.image.get_rect(center=tuple(self.position)).colliderect(danger_zone)

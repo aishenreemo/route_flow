@@ -1,4 +1,4 @@
-from .config import TRAFFIC_LIGHT_SIZE, COLORSCHEME, WINDOW_SIZE
+from .config import TRAFFIC_LIGHT_SIZE, COLORSCHEME, WINDOW_SIZE, YELLOW_SIGNAL_DURATION
 from .utils import percent_val
 from .road import Road
 from pygame.surface import Surface
@@ -28,7 +28,9 @@ class TrafficLight(Sprite):
 
         self.src = src
         self.variant = TrafficLightVariant.STOP
+        self.next = TrafficLightVariant.STOP
         self.position = Vector2(*traffic_light_position_map[src])
+        self.timer = 0
         self.draw()
 
     def draw(self):
@@ -58,6 +60,23 @@ class TrafficLight(Sprite):
             width = 0 if self.variant.value == i else 1
             pygame.draw.rect(self.image, colors[i], rect, width)
 
+    def update(self, clock):
+        self.timer += clock.get_time()
+
+        if self.timer >= YELLOW_SIGNAL_DURATION:
+            self.variant = self.next
+            self.timer = 0
+            self.draw()
+
     def render(self, screen):
         rect = self.image.get_rect(center=tuple(self.position))
         screen.blit(self.image, rect)
+
+    def toggle(self):
+        if self.variant == TrafficLightVariant.SLOW:
+            return
+
+        self.next = TrafficLightVariant.GO if self.variant == TrafficLightVariant.STOP else TrafficLightVariant.STOP
+        self.variant = TrafficLightVariant.SLOW
+        self.timer = 0
+        self.draw()
