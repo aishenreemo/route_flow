@@ -20,9 +20,9 @@ class VehicleLocation(Enum):
 
 
 class VehicleDirection(Enum):
-    RIGHT = -1
+    LEFT = -1
     STRAIGHT = 0
-    LEFT = 1
+    RIGHT = 1
 
 
 control_zone = Rect(
@@ -85,12 +85,12 @@ reverse_map = {
 }
 
 direction_map = {
-    -1: VehicleDirection.RIGHT,
+    -1: VehicleDirection.LEFT,
     -2: VehicleDirection.STRAIGHT,
-    -3: VehicleDirection.LEFT,
-    1: VehicleDirection.LEFT,
+    -3: VehicleDirection.RIGHT,
+    1: VehicleDirection.RIGHT,
     2: VehicleDirection.STRAIGHT,
-    3: VehicleDirection.RIGHT,
+    3: VehicleDirection.LEFT,
 }
 
 
@@ -114,7 +114,7 @@ class Vehicle(Sprite):
         self.destination = Vector2(*destination_map[self.dest])
         self.center_point = Vector2(*center_point_map[self.src])
 
-        if self.direction == VehicleDirection.RIGHT:
+        if self.direction == VehicleDirection.LEFT:
             next_enum = Road((self.src.value + 1) % 4)
             self.center_point = Vector2(*center_point_map[next_enum])
 
