@@ -115,14 +115,14 @@ class Vehicle(Sprite):
             next_enum = Road((self.src.value + 1) % 4)
             self.center_point = Vector2(*center_point_map[next_enum])
 
-        self.turning = True
+        self.stopped = False
 
         self.draw()
 
     def draw(self):
         self.image = Surface(CAR_SIZE, pygame.SRCALPHA)
-        positions = [percent_val((10, 10), CAR_SIZE), percent_val((80, 10), CAR_SIZE)]
-        sizes = [percent_val((80, 80), CAR_SIZE), percent_val((10, 80), CAR_SIZE)]
+        positions = [percent_val((15, 15), CAR_SIZE), percent_val((70, 15), CAR_SIZE)]
+        sizes = [percent_val((70, 70), CAR_SIZE), percent_val((15, 70), CAR_SIZE)]
         colors = [self.color, COLORSCHEME["white"]]
 
         self.image.fill((0, 0, 0, 0))
@@ -133,7 +133,7 @@ class Vehicle(Sprite):
 
         self.image = pygame.transform.rotate(self.image, self.degree)
 
-    def update(self):
+    def update(self, vehicles):
         if self.location == VehicleLocation.ON_SOURCE:
             distance = self.position.distance_to(self.turning_point)
             if distance <= 4:
@@ -157,7 +157,16 @@ class Vehicle(Sprite):
                 self.degree = round(self.degree / 90) * 90
                 self.draw()
 
-        max_speed = 4
+        min_speed = 0.01
+        max_speed = 3
+
+        if not self.is_safe_to_move(vehicles):
+            if self.velocity.length() > min_speed:
+                self.velocity *= 0.3
+        else:
+            if self.velocity.length() < max_speed:
+                self.velocity *= 1.2
+
         if self.velocity.length() > max_speed:
             self.velocity.scale_to_length(max_speed)
 
@@ -166,3 +175,51 @@ class Vehicle(Sprite):
     def render(self, screen):
         rect = self.image.get_rect(center=tuple(self.position))
         screen.blit(self.image, rect)
+
+    def is_safe_to_move(self, vehicles):
+        for vehicle in vehicles:
+            if vehicle is self:
+                continue
+
+            distance_a = vehicle.position.distance_to(self.position)
+            distance_b = vehicle.position.distance_to(self.position + self.velocity)
+            distance_c = self.position.distance_to(vehicle.position + vehicle.velocity)
+
+            if distance_b > distance_a:
+                continue
+
+            if distance_c < distance_a and vehicle.stopped:
+                continue
+
+            if self.is_colliding(vehicle):
+                self.stopped = True
+                return False
+
+        self.stopped = False
+        return True
+
+    def is_colliding(self, vehicle):
+        image_a = Surface(CAR_SIZE, pygame.SRCALPHA)
+        image_b = Surface(CAR_SIZE, pygame.SRCALPHA)
+
+        image_a.fill((0, 0, 0))
+        image_b.fill((0, 0, 0))
+
+        # Scale up the surfaces for inflation
+        scaled_surface_a = pygame.transform.rotate(image_a, self.degree)
+        scaled_surface_b = pygame.transform.rotate(image_b, vehicle.degree)
+
+        # Create masks from the scaled surfaces
+        scaled_mask_a = pygame.mask.from_surface(scaled_surface_a)
+        scaled_mask_b = pygame.mask.from_surface(scaled_surface_b)
+
+        # Calculate the offset between the positions of the two vehicles
+        offset = (
+            int(vehicle.position.x - self.position.x),
+            int(vehicle.position.y - self.position.y)
+        )
+
+        # Calculate the overlap between the inflated collision masks
+        overlap = scaled_mask_a.overlap(scaled_mask_b, offset)
+
+        return bool(overlap)

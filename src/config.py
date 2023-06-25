@@ -1,5 +1,5 @@
 WINDOW_SIZE = (600, 600)
-CAR_SIZE = (100, 60)
+CAR_SIZE = (100, 50)
 
 COLORSCHEME = {
     "black": "#0B0F10",
