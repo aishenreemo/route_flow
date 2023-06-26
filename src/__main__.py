@@ -1,6 +1,8 @@
 from .vehicle import Vehicle, Road, VehicleLocation
 from .config import WINDOW_SIZE, COLORSCHEME, CELL_SIZE
+from .utils import near_vehicles
 from .light import TrafficLight 
+from pygame.math import Vector2
 import pygame
 import random
 
@@ -23,13 +25,15 @@ def main():
     spawn_timer = 0
     spawn_interval = 0
 
-    max_vehicles = 24
+    max_vehicles = 40
 
     traffic_lights = {}
     for road in Road:
         traffic_lights[road] = TrafficLight(road)
 
     while running:
+        update_grid(grid, vehicles)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -38,8 +42,14 @@ def main():
                 for traffic_light in traffic_lights.values():
                     if traffic_light.image.get_rect(center=tuple(traffic_light.position)).collidepoint(mouse_pos):
                         traffic_light.toggle()
+                        break
 
-        update_grid(grid, vehicles)
+                selected_vehicles = near_vehicles(grid, Vector2(*mouse_pos))
+
+                for vehicle in selected_vehicles:
+                    if vehicle.image.get_rect(center=tuple(vehicle.position)).collidepoint(mouse_pos):
+                        vehicle.debug = not vehicle.debug
+                        break
 
         vehicles_to_remove = []
 
@@ -88,7 +98,7 @@ def spawn_vehicle():
     src = random.choice(roads)
     dest = random.choice(roads)
     color = random.choice(colors)
-    acceleration = random.uniform(1.1, 1.4)
+    acceleration = random.uniform(1.3, 1.5)
 
     while src == dest:
         dest = random.choice(roads)

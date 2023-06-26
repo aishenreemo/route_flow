@@ -1,6 +1,6 @@
 from .config import CAR_SIZE, COLORSCHEME, WINDOW_SIZE, CELL_SIZE
 from .light import TrafficLightVariant
-from .utils import percent_val
+from .utils import near_vehicles, percent_val
 from .road import Road
 
 from pygame.surface import Surface
@@ -119,6 +119,7 @@ class Vehicle(Sprite):
             self.center_point = Vector2(*center_point_map[next_enum])
 
         self.stopped = False
+        self.debug = False
 
         self.draw()
 
@@ -171,7 +172,7 @@ class Vehicle(Sprite):
 
         if not self.is_safe_to_move(grid, traffic_lights):
             if self.velocity.length() > min_speed:
-                self.velocity *= 0.3
+                self.velocity *= 0.65
         else:
             if self.velocity.length() < max_speed:
                 self.velocity *= self.acceleration
@@ -186,6 +187,25 @@ class Vehicle(Sprite):
         rect = self.image.get_rect(center=tuple(self.position))
         screen.blit(self.image, rect)
 
+        if not self.debug:
+            return
+
+        if self.location == VehicleLocation.ON_DESTINATION:
+            return
+
+        pygame.draw.rect(screen, COLORSCHEME["red"], self.image.get_rect(center=tuple(self.position)), 1)
+        pygame.draw.circle(screen, COLORSCHEME["red"], self.turning_point, 2)
+        pygame.draw.circle(screen, COLORSCHEME["red"], self.destination, 2)
+
+        if self.direction != VehicleDirection.STRAIGHT:
+            radius = (self.center_point - self.turning_point).length()
+            pygame.draw.circle(screen, COLORSCHEME["red"], self.center_point, radius, 1)
+            pygame.draw.circle(screen, COLORSCHEME["red"], self.center_point, 2)
+            pygame.draw.line(screen, COLORSCHEME["red"], self.position, self.turning_point)
+        else:
+            pygame.draw.line(screen, COLORSCHEME["red"], self.position, self.destination)
+
+
     def is_safe_to_move(self, grid, traffic_lights):
         is_stop = traffic_lights[self.src].variant != TrafficLightVariant.GO
         is_onsrc = self.location == VehicleLocation.ON_SOURCE
@@ -196,18 +216,7 @@ class Vehicle(Sprite):
             self.stopped = True
             return False
 
-        vehicles = []
-        cell_x = int(self.position.x / CELL_SIZE[0])
-        cell_y = int(self.position.y / CELL_SIZE[1])
-        neighboring_cells = [
-            (cell_x - 1, cell_y - 1), (cell_x, cell_y - 1), (cell_x + 1, cell_y - 1),
-            (cell_x - 1, cell_y), (cell_x, cell_y), (cell_x + 1, cell_y),
-            (cell_x - 1, cell_y + 1), (cell_x, cell_y + 1), (cell_x + 1, cell_y + 1)
-        ]
-
-        for cell_key in neighboring_cells:
-            if cell_key in grid:
-                vehicles.extend(grid[cell_key])
+        vehicles = near_vehicles(grid, self.position)
 
         for vehicle in vehicles:
             if vehicle is self:
