@@ -1,8 +1,9 @@
-from .vehicle import Vehicle, Road, VehicleLocation
+from .vehicle import Vehicle, Road, VehicleLocation, offset_map
 from .config import WINDOW_SIZE, COLORSCHEME, CELL_SIZE
 from .utils import near_vehicles
 from .light import TrafficLight 
 from pygame.math import Vector2
+from pygame.font import Font
 import pygame
 import random
 
@@ -25,9 +26,18 @@ def main():
     spawn_timer = 0
     spawn_interval = 0
 
-    max_vehicles = 40
+    max_vehicles = 200
 
     traffic_lights = {}
+
+    total_travel_time = 0
+    traveled_vehicle_count = 0
+
+    total_delay = 0
+    delayed_vehicle_count = 0
+
+    font = Font(None, 16)
+
     for road in Road:
         traffic_lights[road] = TrafficLight(road)
 
@@ -63,7 +73,17 @@ def main():
             else:
                 vehicle.update(grid, traffic_lights)
 
+            if vehicle_is_inside or not vehicle_passed:
+                vehicle.travel_time += clock.get_time() / 1000
+
+            if vehicle.is_stopped():
+                vehicle.delay_time += clock.get_time() / 1000
+
         for vehicle in vehicles_to_remove:
+            total_travel_time += vehicle.travel_time
+            traveled_vehicle_count += 1
+            total_delay += vehicle.delay_time
+            delayed_vehicle_count += 1
             vehicles.remove(vehicle)
 
         window.blit(road_image, (0, 0))
@@ -78,11 +98,27 @@ def main():
         spawn_timer += clock.get_time()
         if spawn_timer >= spawn_interval and len(vehicles) < max_vehicles:
             new_vehicle = spawn_vehicle()
-            if (new_vehicle.is_safe_to_move(grid, traffic_lights)):
-                vehicles.append(new_vehicle)
+            if not new_vehicle.is_safe_to_move(grid, traffic_lights):
+                new_vehicle.position += Vector2(*offset_map[new_vehicle.src])
+
+            vehicles.append(new_vehicle)
 
             spawn_timer = 0
-            spawn_interval = random.randint(200, 500) 
+            spawn_interval = random.randint(0, 1500) 
+
+        seconds_since_awake = pygame.time.get_ticks() / 1000
+        window.blit(font.render("seconds since awake: {:.2f}s".format(seconds_since_awake), True, COLORSCHEME["black"]), (10, 10))
+
+        congestion_level = len(vehicles) / max_vehicles
+        window.blit(font.render("congestion level: {:.2%}".format(congestion_level), True, COLORSCHEME["black"]), (10, 20))
+
+        average_travel_time = total_travel_time / traveled_vehicle_count if traveled_vehicle_count > 0 else 0
+        window.blit(font.render("avg travel time: {:.2f}s".format(average_travel_time), True, COLORSCHEME["black"]), (10, 30))
+
+        average_delay = total_delay / delayed_vehicle_count if delayed_vehicle_count > 0 else 0
+        window.blit(font.render("avg delay: {:.2f}s".format(average_delay), True, COLORSCHEME["black"]), (10, 40))
+
+        window.blit(font.render("total vehicles: {}".format(len(vehicles)), True, COLORSCHEME["black"]), (10, 50))
 
         pygame.display.flip()
 

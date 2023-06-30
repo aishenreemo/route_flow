@@ -30,14 +30,21 @@ control_zone = Rect(
     (int((20 / 100) * WINDOW_SIZE[0]), int((20 / 100) * WINDOW_SIZE[1])),
 )
 
-danger_zone = control_zone.inflate(-20, -20)
+danger_zone = control_zone.inflate(-25, -25)
 
 # initial positions
+offset_map = {
+    Road.A: (0, -100),
+    Road.B: (100, 0),
+    Road.C: (0, 100),
+    Road.D: (-100, 0),
+}
+
 source_position_map = {
-    Road.A: ((45 / 100) * WINDOW_SIZE[0], -500),
-    Road.B: (WINDOW_SIZE[0] + 500, (45 / 100) * WINDOW_SIZE[1]),
-    Road.C: ((55 / 100) * WINDOW_SIZE[0], WINDOW_SIZE[1] + 500),
-    Road.D: (-500, (55 / 100) * WINDOW_SIZE[1]),
+    Road.A: ((45 / 100) * WINDOW_SIZE[0], -100),
+    Road.B: (WINDOW_SIZE[0] + 100, (45 / 100) * WINDOW_SIZE[1]),
+    Road.C: ((55 / 100) * WINDOW_SIZE[0], WINDOW_SIZE[1] + 100),
+    Road.D: (-100, (55 / 100) * WINDOW_SIZE[1]),
 }
 
 turning_point_map = {
@@ -102,6 +109,8 @@ class Vehicle(Sprite):
         self.dest = dest
         self.color = color
         self.acceleration = acceleration
+        self.travel_time = 0
+        self.delay_time = 0
 
         self.position = Vector2(*source_position_map[src])
         self.velocity = Vector2(*velocity_map[src])
@@ -168,7 +177,7 @@ class Vehicle(Sprite):
                 self.draw()
 
         min_speed = 0.01
-        max_speed = 4
+        max_speed = 3
 
         if not self.is_safe_to_move(grid, traffic_lights):
             if self.velocity.length() > min_speed:
@@ -180,7 +189,7 @@ class Vehicle(Sprite):
         if self.velocity.length() > max_speed:
             self.velocity.scale_to_length(max_speed)
 
-        if self.velocity.length() > 0.02:
+        if not self.is_stopped():
             self.position += self.velocity
 
     def render(self, screen):
@@ -205,6 +214,8 @@ class Vehicle(Sprite):
         else:
             pygame.draw.line(screen, COLORSCHEME["red"], self.position, self.destination)
 
+    def is_stopped(self):
+        return self.velocity.length() <= 0.02
 
     def is_safe_to_move(self, grid, traffic_lights):
         is_stop = traffic_lights[self.src].variant != TrafficLightVariant.GO
