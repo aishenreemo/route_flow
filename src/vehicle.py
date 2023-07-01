@@ -177,7 +177,7 @@ class Vehicle(Sprite):
                 self.draw()
 
         min_speed = 0.01
-        max_speed = 3
+        max_speed = 3.5
 
         if not self.is_safe_to_move(grid, traffic_lights):
             if self.velocity.length() > min_speed:
